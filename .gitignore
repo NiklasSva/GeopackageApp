@@ -1,0 +1,10 @@
+*.pyc
+__pycache__/
+*.pyo
+*.pyc
+*.pyd
+*.pyo
+*.pyz
+*.pyw
+*.pyz
+.Python

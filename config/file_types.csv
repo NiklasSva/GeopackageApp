@@ -1,0 +1,6 @@
+dataImport,.shp
+dataImport,.gpkg
+dataImport,.geojson
+dataExport,.shp
+dataExport,.gpkg
+dataExport,.geojson
