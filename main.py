@@ -12,9 +12,10 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-import geopandas
+
 import matplotlib.pyplot as pyplot
 import tkinter
+import geopandas
 # -----------------------------------
 from tkinter import filedialog 
 # This allows you to use the filedialog module directly without having to
@@ -29,16 +30,13 @@ def open_file_dialog():
     return file_path
 
 file = open_file_dialog()
-print (io.ReadFile(file))
+data = io.ReadFile(file)
+print(data)
 
-# make dummy geopackage for testing
-# geo_data_frame = geopandas.GeoDataFrame(geometry=geopandas.points_from_xy([0, 1, 2], [0, 1, 2]))
-# geo_data_frame.to_file("dummy_geopackage.gpkg")
+new_data = geopandas.GeoDataFrame(geometry=geopandas.points_from_xy([0, 1, 2], [0, 1, 2]))
+io.WriteToFile("test", "shp", new_data)
+io.WriteToFile("test", "gpkg", new_data)
+io.WriteToFile("test", "geojson", new_data)
 
-
-'''
-
-#geo_data_frame.plot()
-#pyplot.show()
-
-'''
+data.plot()
+pyplot.show()
