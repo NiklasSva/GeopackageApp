@@ -12,31 +12,138 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-
 import matplotlib.pyplot as pyplot
 import tkinter
 import geopandas
+import os
 # -----------------------------------
-from tkinter import filedialog 
-# This allows you to use the filedialog module directly without having to
-# prefix it with "tkinter." when calling its functions.
+from tkinter import filedialog # This allows me to use the filedialog module directly without having to prefix it with "tkinter."
 # -----------------------------------
 import functions.file_IO as io
+import functions.custom_console as console
 
-def open_file_dialog():
+console_buffer = ""
+console_widget = None
+
+def Update_console_buffer(text:str):
+    global console_buffer 
+    console_buffer += '\n' + text
+
+def Clear_console_buffer():
+    global console_buffer
+    console_buffer = ""
+
+def Update_console():
+    global console_buffer
+    if console_widget is not None:
+        console_widget.insert(tkinter.END, console_buffer)
+        console_widget.see(tkinter.END)
+
+def open_file_dialog(nr:int = 0, filetypes:list[tuple]=[("gpkg files", "*.gpkg")]) -> str: # add other file types here
     root = tkinter.Tk()
+    window_title = ""
+
+    if nr == 0:
+        window_title = "Select a file"
+    elif nr == 1:
+        window_title = "Select the first file"
+    elif nr == 2:
+        window_title = "Select the second file"
+    
     root.withdraw()
-    file_path = filedialog.askopenfilename()
+    file_path = filedialog.askopenfilename(filetypes=[("gpkg files", "*.gpkg")], title=window_title)
     return file_path
 
-file = open_file_dialog()
-data = io.ReadFile(file)
-print(data)
+def Display_file_data(file_path:str):
+    if file_path is None:
+        print("No file selected.")
+        return
+    
+    data = io.ReadFile(file_path)
+    if data is None:
+        print("Could not read the file.")
+        return
 
-new_data = geopandas.GeoDataFrame(geometry=geopandas.points_from_xy([0, 1, 2], [0, 1, 2]))
-io.WriteToFile("test", "shp", new_data)
-io.WriteToFile("test", "gpkg", new_data)
-io.WriteToFile("test", "geojson", new_data)
+    print(data)
+    Update_console_buffer(data)
 
-data.plot()
-pyplot.show()
+def Check_common_columns(data_1:geopandas.GeoDataFrame, data_2:geopandas.GeoDataFrame) -> set:
+    print("Columns in data_1:", data_1.columns)
+    print("Columns in data_2:", data_2.columns)
+
+    common_columns = set(data_1.columns) & set(data_2.columns)
+    print("Common columns:", common_columns)
+    return common_columns
+
+def Join_geodata_files():
+    file_path_1 = open_file_dialog(1)
+    data_1 = io.ReadFile(file_path_1)
+    if data_1 is None:
+        print("Could not read the first file.")
+        return
+    
+    file_path_2 = open_file_dialog(2)
+    data_2 = io.ReadFile(file_path_2)
+    if data_2 is None:
+        print("Could not read the second file.")
+        return   
+
+    common_columns = Check_common_columns(data_1, data_2)
+    if len(common_columns) < 1:
+        print("The files can not be joined because they have no common columns.")
+        return
+    
+    file_name_1 = os.path.splitext(os.path.basename(file_path_1))[0]
+    file_name_2 = os.path.splitext(os.path.basename(file_path_2))[0]
+
+    try:
+        merged_data = data_1.merge(data_2, on = list(common_columns), how = 'outer')
+        io.WriteToFile(f"joined_{file_name_1}_{file_name_2} ", "gpkg", merged_data)
+    except Exception as e:
+        print(e)
+
+def Plot_file_data(file_path:str):
+    data = io.ReadFile(file_path)
+    if data is None:
+        print("Could not read the file.")
+        return
+    
+    Update_console_buffer("plotting data...")
+    print(str(data))
+    data.plot()
+    pyplot.show()
+    
+def Start_application():
+    global console_buffer
+    global console_widget
+
+    root = tkinter.Tk()
+    root.title("Geopackage App")
+    root.geometry("640x480")  
+
+    # Add buttons to the window
+    open_button = tkinter.Button(root, text="Open a geodata file", command=lambda: open_file_dialog(0))
+    open_button.pack()
+
+    join_button = tkinter.Button(root, text="Join two geodata files", command=lambda: Join_geodata_files())
+    join_button.pack()
+
+    display_button = tkinter.Button(root, text="Display a geodata file", command=lambda: Plot_file_data(open_file_dialog(0)))
+    display_button.pack()
+
+    quit_button = tkinter.Button(root, text="Quit", command=root.destroy)
+    quit_button.pack()
+
+    # Add console output to the window
+    console_widget = console.Add_console(root)
+    
+    Update_console_buffer("Welcome to the Geopackage App.\n")
+    Update_console()
+
+    console_buffer.trace("w", lambda: root.after(100, Update_console)) # str cannot be traced
+    
+    root.mainloop()
+    
+
+# start the application
+Start_application()
