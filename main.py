@@ -13,31 +13,12 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import matplotlib.pyplot as pyplot
-import tkinter
-import geopandas
-import os
+import tkinter, geopandas, os, sys
 # -----------------------------------
 from tkinter import filedialog # This allows me to use the filedialog module directly without having to prefix it with "tkinter."
 # -----------------------------------
 import functions.file_IO as io
 import functions.custom_console as console
-
-console_buffer = ""
-console_widget = None
-
-def Update_console_buffer(text:str):
-    global console_buffer 
-    console_buffer += '\n' + text
-
-def Clear_console_buffer():
-    global console_buffer
-    console_buffer = ""
-
-def Update_console():
-    global console_buffer
-    if console_widget is not None:
-        console_widget.insert(tkinter.END, console_buffer)
-        console_widget.see(tkinter.END)
 
 def open_file_dialog(nr:int = 0, filetypes:list[tuple]=[("gpkg files", "*.gpkg")]) -> str: # add other file types here
     root = tkinter.Tk()
@@ -65,7 +46,6 @@ def Display_file_data(file_path:str):
         return
 
     print(data)
-    Update_console_buffer(data)
 
 def Check_common_columns(data_1:geopandas.GeoDataFrame, data_2:geopandas.GeoDataFrame) -> set:
     print("Columns in data_1:", data_1.columns)
@@ -108,42 +88,51 @@ def Plot_file_data(file_path:str):
         print("Could not read the file.")
         return
     
-    Update_console_buffer("plotting data...")
     print(str(data))
     data.plot()
     pyplot.show()
+
+class ConsoleRedirector:
+    def __init__(self, console_widget):
+        self.console_widget = console_widget
+
+    def write(self, text):
+        self.console_widget.insert(tkinter.END, text)
+        self.console_widget.see(tkinter.END)  # Auto-scroll to the end of the text
+
     
 def Start_application():
-    global console_buffer
-    global console_widget
-
     root = tkinter.Tk()
     root.title("Geopackage App")
     root.geometry("640x480")  
 
-    # Add buttons to the window
     open_button = tkinter.Button(root, text="Open a geodata file", command=lambda: open_file_dialog(0))
     open_button.pack()
-
     join_button = tkinter.Button(root, text="Join two geodata files", command=lambda: Join_geodata_files())
     join_button.pack()
-
     display_button = tkinter.Button(root, text="Display a geodata file", command=lambda: Plot_file_data(open_file_dialog(0)))
     display_button.pack()
-
     quit_button = tkinter.Button(root, text="Quit", command=root.destroy)
     quit_button.pack()
 
-    # Add console output to the window
-    console_widget = console.Add_console(root)
-    
-    Update_console_buffer("Welcome to the Geopackage App.\n")
-    Update_console()
+    console_output = console.Add_console(root)
+    # make print() write to the new console widget
+    sys.stdout = ConsoleRedirector(console_output)
 
-    console_buffer.trace("w", lambda: root.after(100, Update_console)) # str cannot be traced
-    
-    root.mainloop()
-    
+    root.deiconify() # displays a window that was hidden with "root.withdraw()"
+    root.mainloop()    
+
+    sys.stdout = sys.__stdout__
+
 
 # start the application
 Start_application()
+
+
+
+
+
+
+
+
+
