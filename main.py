@@ -22,7 +22,7 @@ from tkinter import filedialog
 import functions.file_IO as io
 import functions.custom_console as console
 
-def open_file_dialog(nr:int = 0, filetypes:list[tuple]=[("gpkg files", "*.gpkg")]) -> str: # add other file types here
+def open_file_dialog(nr:int = 0, fileTypes:list[tuple]=[("gpkg files", "*.gpkg"), ("All files", "*")]) -> str: # add other file types here
     root = tkinter.Tk()
     window_title = ""
 
@@ -31,11 +31,10 @@ def open_file_dialog(nr:int = 0, filetypes:list[tuple]=[("gpkg files", "*.gpkg")
     elif nr == 1:
         window_title = "Select the first file"
     elif nr == 2:
-        window_title = "Select the second file"
+        window_title = "Select the second file"    
     
     root.withdraw()
-    file_path = filedialog.askopenfilename(filetypes=[("gpkg files", "*.gpkg")], title=window_title)
-    print("Selected file:", file_path)
+    file_path = filedialog.askopenfilename(filetypes=fileTypes, title=window_title)
     return file_path
 
 def Display_file_data(file_path:str):
