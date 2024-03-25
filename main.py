@@ -15,7 +15,9 @@
 import matplotlib.pyplot as pyplot
 import tkinter, geopandas, os, sys
 # -----------------------------------
-from tkinter import filedialog # This allows me to use the filedialog module directly without having to prefix it with "tkinter."
+from tkinter import filedialog 
+# ^ This allows me to use the filedialog module directly without having
+# to prefix it with "tkinter."
 # -----------------------------------
 import functions.file_IO as io
 import functions.custom_console as console
@@ -33,6 +35,7 @@ def open_file_dialog(nr:int = 0, filetypes:list[tuple]=[("gpkg files", "*.gpkg")
     
     root.withdraw()
     file_path = filedialog.askopenfilename(filetypes=[("gpkg files", "*.gpkg")], title=window_title)
+    print("Selected file:", file_path)
     return file_path
 
 def Display_file_data(file_path:str):
@@ -99,18 +102,17 @@ class ConsoleRedirector:
     def write(self, text):
         self.console_widget.insert(tkinter.END, text)
         self.console_widget.see(tkinter.END)  # Auto-scroll to the end of the text
-
     
 def Start_application():
     root = tkinter.Tk()
     root.title("Geopackage App")
     root.geometry("640x480")  
 
-    open_button = tkinter.Button(root, text="Open a geodata file", command=lambda: open_file_dialog(0))
+    open_button = tkinter.Button(root, text="Open a geodata file", command=lambda: Display_file_data(open_file_dialog()))
     open_button.pack()
     join_button = tkinter.Button(root, text="Join two geodata files", command=lambda: Join_geodata_files())
     join_button.pack()
-    display_button = tkinter.Button(root, text="Display a geodata file", command=lambda: Plot_file_data(open_file_dialog(0)))
+    display_button = tkinter.Button(root, text="Display a geodata file", command=lambda: Plot_file_data(open_file_dialog()))
     display_button.pack()
     quit_button = tkinter.Button(root, text="Quit", command=root.destroy)
     quit_button.pack()
@@ -119,20 +121,9 @@ def Start_application():
     # make print() write to the new console widget
     sys.stdout = ConsoleRedirector(console_output)
 
-    root.deiconify() # displays a window that was hidden with "root.withdraw()"
     root.mainloop()    
 
     sys.stdout = sys.__stdout__
 
-
 # start the application
-Start_application()
-
-
-
-
-
-
-
-
-
+Start_application()  
