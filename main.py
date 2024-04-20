@@ -16,8 +16,6 @@ import matplotlib.pyplot as pyplot
 import tkinter, geopandas, os, sys
 # -----------------------------------
 from tkinter import filedialog 
-# ^ This allows me to use the filedialog module directly without having
-# to prefix it with "tkinter."
 # -----------------------------------
 import functions.file_IO as io
 import functions.custom_console as console

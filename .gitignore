@@ -8,3 +8,8 @@ __pycache__/
 *.pyw
 *.pyz
 .Python
+*.gpkg
+*.cpg
+*.geojson
+*.shp
+*.shx
