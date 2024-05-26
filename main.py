@@ -13,9 +13,10 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import matplotlib.pyplot as pyplot
-import tkinter, geopandas, os, sys
+import tkinter, geopandas, os, sys, pandas
+import concurrent.futures
 # -----------------------------------
-from tkinter import filedialog 
+from tkinter import filedialog
 # -----------------------------------
 import functions.file_IO as io
 import functions.custom_console as console
@@ -99,11 +100,81 @@ class ConsoleRedirector:
     def write(self, text):
         self.console_widget.insert(tkinter.END, text)
         self.console_widget.see(tkinter.END)  # Auto-scroll to the end of the text
+
+# overkill for now probably
+'''
+    class BackgroundTask:
+    def __init__(self, name:str = "Unnamed task", parent_task:BackgroundTask = None, child_tasks:list[BackgroundTask] = []):
+        self.name = name
+        self.parent_task = parent_task
+        self.child_tasks = child_tasks
+        self.wait_for_child_tasks = False
+
+        if self.child_tasks is not None:
+            self.wait_for_child_tasks = True
+
+    def Run():
+        pass
+
+    def Finished():
+        pass
+
+    def Cancel():
+        pass
+'''
+
+def Find_Object_Parents():
+    file_path = open_file_dialog()
+
+    Attributes_Objects = geopandas.read_file(file_path, layer = "objects")
+    Attributes_Relations = geopandas.read_file(file_path, layer = "object_relations")
+
+    if Attributes_Objects is None or Attributes_Relations is None:
+        print("The file(s) could not be read.")
+        return    
+
+    print(Attributes_Objects)
+    print(Attributes_Relations)
+
+    # Time to find the actual parents
+    parents = geopandas.GeoDataFrame()
+
+    for each in Attributes_Objects.itertuples():
+        condition = Attributes_Relations['related_id'] == each[0]
+        filtered_rows = Attributes_Relations[condition]
+        parents = geopandas.GeoDataFrame(pandas.concat([parents, filtered_rows], ignore_index=True))
+
+    # NOTE: Not DRY! (see IO functions for more)
+    if not os.path.exists("./output"):
+        os.makedirs("./output")
+    #parents.to_file("./output/parents.gpkg", driver="GPKG")
+    parents.to_csv("./output/parents.csv", index=True)
     
+    # Make extended list of attributes with parent ID added to the attributes
+    Extended_Attributes = Attributes_Objects.copy()
+    Extended_Attributes = Extended_Attributes.assign(parent_id = None)
+
+    print(Extended_Attributes.columns)
+    print(Attributes_Objects.columns)
+
+    for each in parents.itertuples():
+        Extended_Attributes.loc[Extended_Attributes.index == each[3], "parent_id"] = each[2] # won't update, maybe permissions are wrong?
+    #Extended_Attributes.to_csv("./output/extended.csv", index=True)
+
+    print("Extended:")
+    for each in Extended_Attributes.itertuples():
+        print(each)
+    Extended_Attributes.to_file("./output/extended.gpkg", driver="GPKG")    
+
+
+    print("Finished: Find Object Parents")
+
 def Start_application():
     root = tkinter.Tk()
     root.title("Geopackage App")
-    root.geometry("640x480")  
+    root.geometry("800x600")
+    # root.overrideredirect(True) # remove the title bar and its buttons 
+    # TODO: ^ change this to a custom title bar widget to keep some functionality
 
     open_button = tkinter.Button(root, text="Open a geodata file", command=lambda: Display_file_data(open_file_dialog()))
     open_button.pack()
@@ -111,15 +182,20 @@ def Start_application():
     join_button.pack()
     display_button = tkinter.Button(root, text="Display a geodata file", command=lambda: Plot_file_data(open_file_dialog()))
     display_button.pack()
+    find_parents_button = tkinter.Button(root, text="Find Object Parents", command=lambda: Find_Object_Parents())
+    find_parents_button.pack()
+
     quit_button = tkinter.Button(root, text="Quit", command=root.destroy)
     quit_button.pack()
 
     console_output = console.Add_console(root)
+    console_output.configure(width=640, height=480)
     # make print() write to the new console widget
     sys.stdout = ConsoleRedirector(console_output)
 
-    root.mainloop()    
+    root.mainloop()
 
+    # restore stdout
     sys.stdout = sys.__stdout__
 
 # start the application
